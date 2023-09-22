@@ -1,0 +1,55 @@
+#let's delete output folder
+# Specify the path to the folder you want to save data
+import shutil
+folder_path = 'local_folder'
+# Verify if the folder has been deleted
+if os.path.exists(folder_path):
+    # Use shutil.rmtree() to delete the folder and its contents
+    shutil.rmtree(folder_path)
+    print(f"The folder at {folder_path} has been successfully deleted.")
+
+import earthaccess
+import urllib3
+import requests
+
+auth = earthaccess.login()
+# find short_name and details from https://podaac.jpl.nasa.gov/cloud-datasets site
+
+results = earthaccess.search_data(
+    short_name='SEA_SURFACE_HEIGHT_ALT_GRIDS_L4_2SATS_5DAY_6THDEG_V_JPL2205',
+    # short_name= 'TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.1_V3',  # copied from earthdata information
+    cloud_hosted=True,
+    bounding_box=(125, 35, 129, 38),    #xmin ymin xmax ymax
+    temporal=("2021-10-22", "2023-08-10"),
+    count=10) # all the files with -1
+
+files = earthaccess.download(results, folder_path)
+import xarray as xr
+import matplotlib.pyplot as plt
+import cartopy.crs as ccrs
+
+# Load the NetCDF file using xarray
+nc_file_path = '/content/local_folder/ssh_grids_v2205_2021102312.nc' # Replace with the path to your .nc file
+data = xr.open_dataset(nc_file_path)
+
+# Extract the variable you want to visualize (e.g., temperature)
+variable_name = "SLA_ERR"  # Replace with the variable name in your file
+variable_data = data[variable_name]
+# Create a map plot using cartopy and matplotlib
+plt.figure(figsize=(10, 6))
+ax = plt.axes(projection=ccrs.PlateCarree())
+ax.set_extent([120, 129, 30, 40], crs=ccrs.PlateCarree())
+
+# Plot the data on the map
+variable_data.plot(ax=ax, transform=ccrs.PlateCarree(),
+                   cmap='coolwarm', cbar_kwargs={'label': variable_name})
+
+# Add map features
+ax.coastlines(resolution='10m', linewidth=1)
+ax.gridlines(draw_labels=['bottom','left'])
+
+
+plt.title(f"{variable_name} Visualization")
+plt.show()
+
+data.items
